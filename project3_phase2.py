@@ -16,8 +16,9 @@ import math
 
 def createObstacles(canvas):
     
-    # Rad=int(input("Enter Robot radius: "))
-    clea=int(input("Enter clearence to be maintained for Robot: "))
+    
+    clea=10.5  
+    # radius of turtlebot
     offset=clea
     
     height,width,_ = canvas.shape
@@ -36,7 +37,113 @@ def createObstacles(canvas):
             
     return canvas
 
+start_state=[]
+goal_state=[]
+rpm_list=[]
+
+def getInputs():
+    
+    # get valid x,y,theta_s coordinate of start point
+    while True:
+        
+        while True:
+            
+            value=input("Enter the X- coordinate of Start Point: ")
+            
+            if float(value)<0 or float(value)>a_width:
+                print("Invalid input...Re-enter a valid X-coordinate \n")
+                continue
+            else:
+                start_state.append(float(value))
+                break
+        while True:
+            
+            value=input("Enter Y-coordinate of Start Point: ")
+            
+            if float(value)<0 or float(value)>a_height:
+                print("Invalid Input...Re-enter a valid Y-coordinate\n")
+                continue
+            else:
+                start_state.append(float(value))
+                break
+        
+        while True:
+            
+            value=input("Enter Orientation of Robot at Start Point(+ve in counter-clockwise):\n")
+            
+            start_state.append(float(value))
+            break
+        
+        
+        if (canvas[a_height-int(start_state[1])][int(start_state[0])][1]==255):
+            print("***Start Point Entered is inside Obstacle Space..Retry***")
+            start_state.clear()
+            continue
+        else:
+            break
+    
+    # get valid x,y,theta_g coordinate of goal node
+    while True:
+        
+        while True:
+            
+            value=input("Enter the X- coordinate of Goal Point: ")
+            
+            if float(value)<0 or float(value)>a_width:
+                print("Invalid input...Re-enter a valid X-coordinate \n")
+                
+                continue
+            else:
+                goal_state.append(float(value))
+                break
+        
+        while True:
+            
+            value=input("Enter Y-coordinate of Goal Point: ")
+            
+            if float(value)<0 or float(value)>a_height:
+                print("Invalid Input...Re-enter a valid Y-coordinate\n")
+                continue
+            else:
+                goal_state.append(float(value))
+                break
+        
+        
+        if canvas[a_height-int(goal_state[1])][int(goal_state[0])][1]==255:
+            print("***Goal Point Entered is inside Obstacle Space..Retry***")
+            goal_state.clear()
+            continue
+        else:
+            lrpm=input('Enter Left wheel Rpm: ')
+            rrpm=input('Enter Right wheel Rpm: ')
+            rpm_list.append(int(lrpm))
+            rpm_list.append(int(rrpm))
+            
+            break
+
+    
+    return start_state,goal_state,rpm_list
+
 if __name__=='__main__':
     
     canvas=np.ones((250,400,3),dtype='uint8')
     canvas=createObstacles(canvas)
+     
+# =============================================================================
+#     cv2.imshow('canvas', canvas)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+# =============================================================================
+   
+    height,width,_=canvas.shape
+    a_height=height-1
+    a_width=width-1
+    
+    start_state,goal_state,rpm_list=getInputs()
+    
+    # print(start_state,"goal",goal_state,'rpm',rpm_list)
+    RPM1=rpm_list[0]
+    RPM2=rpm_list[1]
+    
+
+    actions=[[0, RPM1],[RPM1, 0],[RPM1, RPM1],[0, RPM2],[RPM2, 0],[RPM2, RPM2],[RPM1, RPM2],[RPM2, RPM1]]
