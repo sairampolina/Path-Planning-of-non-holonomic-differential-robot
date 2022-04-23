@@ -124,6 +124,285 @@ def getInputs():
     
     return start_state,goal_state,rpm_list
 
+
+def isItDuplicatenode(p,q,r,V):
+    
+    if (p>249 or q>399):
+        return True
+     
+    p=round(p*2)/2
+    q=round(q*2)/2
+    
+    if r>=360:
+        r=(r%360)
+   
+    # print(p,q,r)
+   
+    if V[int(2*p)][int(2*q)][int(r//30)]==0:
+        
+        V[int(2*p)][int(2*q)][int(r//30)]=1
+        return False
+    else:
+        return True
+    
+def generateNode(node,UL,UR,canvas):
+    
+    next_node=copy.deepcopy(node)
+    
+    r = 0.200
+    L = 0.354
+    dt = 0.1
+    D=0
+    X_i=next_node[0]
+    Y_i=next_node[1]
+    Thetai=next_node[2]
+    
+# =============================================================================
+#     # if angle is negative, change angle to (counter clock wise angle)
+#     if (Thetai<0):
+#         Thetai=360+Thetai
+#     else:
+#         Thetai=Thetai
+# =============================================================================
+    
+    Thetan =(3.14 * Thetai) / 180
+    
+    node_steps_list=[]
+    
+    node_steps_list.append([X_i,Y_i,Thetai])
+    
+    for i in range(0,5,1):
+        
+        Delta_Xn = 0.5*r * (UL + UR) * math.cos(Thetan) * dt
+        Delta_Yn = 0.5*r * (UL + UR) * math.sin(Thetan) * dt
+        Thetan = (r / L) * (UR - UL) * dt
+        D=D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2))
+        
+        Xd=X_i+Delta_Xn
+        Yd=Y_i+Delta_Yn
+        Thetad=Thetai+(180*(Thetan))/3.14
+        
+        # if angle is negative, change angle to (counter clock wise angle)
+        if (Thetad<0):
+            Thetad=360+Thetai
+        else:
+            Thetad=Thetad
+       
+        if (Thetad>360):
+            Thetad=(Thetad%360)
+       
+        X_i=Xd
+        Y_i=Yd
+        Thetai=Thetad
+        Thetan=(3.14 * Thetad) / 180
+        
+        if canvas[int(a_height-Yd)][int(Xd)][1]==255:
+            node_steps_list.clear()
+            return False,next_node,node_steps_list,D
+            break
+        else:
+            # Thetan = (180 * Thetan) / 3.14
+            node_steps_list.append([Xd,Yd,Thetad])
+    
+    print(node_steps_list)
+    print('/n************************************')
+        
+    if (not isItDuplicatenode(Xd,Yd,Thetad,V)):
+
+        next_node[0],next_node[1],next_node[2]=node_steps_list[-1]   
+        
+        return True,next_node,node_steps_list,D 
+    else:
+        return False,next_node,node_steps_list,D
+
+def c2g(coordinates1,goal_state):
+    point1=np.array(copy.deepcopy(coordinates1[0:2]))
+    goal_point=np.array(copy.deepcopy(goal_state[0:2]))
+    
+    dis=np.linalg.norm(point1-goal_point)
+    
+    return int(dis)       
+
+
+def AStar(start_state,goal_state,canvas,UL,UR):
+    open_list = []
+    # closed_list key(present_node):value(parent_node)
+    closed_list = {} 
+    back_track_flag = False
+    hp.heapify(open_list)
+    c2g_i=c2g(start_state,goal_state)
+    hp.heappush(open_list,[c2g_i,0,start_state,start_state])
+    # 0: Total-cost,1:cost to come,2:parent node, 3: present node
+    
+    path_dict={}
+    
+    while(len(open_list)>0):
+        
+        # pop node from open list
+        node=hp.heappop(open_list)
+        
+        
+        # adding popped node to closed-list
+        closed_list[(node[3][0],node[3][1],node[3][2])]=node[2]
+       
+# =============================================================================
+#         # check if popped node is goal node
+#         # if it is goal start back tracking
+#         p1=np.array(goal_state[0:2])
+#         p2=np.array(node[3][0:2])
+#         distance=np.linalg.norm(p1-p2)
+#         l=5*0.105
+#         
+#         if (distance**2)<=(l**2):
+#             back_track_flag=True
+#             apprx_goal=node[3]
+#             print('************Started BackTracking**************\n')
+#             break
+#         
+#         del p1
+#         del p2
+# =============================================================================
+        
+        
+        
+        
+        actions=[[0, UL],[UL, 0],[UL, UL],[0, UR],[UR, 0],[UR, UR],[UL, UR],[UR, UL]]
+        
+      
+        
+        for action in actions:
+            
+            flag,next_node,node_steps_list,D=generateNode(node[3],action[0],action[1], canvas)
+            
+            present_c2c=node[1]
+        
+
+            if(flag):
+                
+                present_c2g=c2g(next_node,goal_state)
+                
+                # consider child, if it is not in closed-list
+                
+                if tuple(next_node) not in closed_list:
+                    
+                    # calculate c2c and total-cost
+                    new_c2c=present_c2c+D
+                    Total_cost=new_c2c+present_c2g
+                    
+                    
+                    # if child is not in open_list add child with its  Total cost,c2c, and parent node
+                    temp_list=[]
+                    
+                    for i in range(len(open_list)):
+                        temp_list.append(open_list[i][3])
+                   
+                    if next_node not in temp_list:
+                        hp.heappush(open_list,[Total_cost,new_c2c, node[3],next_node])
+                        hp.heapify(open_list)
+                        path_dict[(next_node[0],next_node[1],next_node[2])]=node_steps_list
+                    
+                    # if it is in open-list update costs and parent-node
+                    else:
+                        idx=temp_list.index(next_node) 
+                        if(Total_cost<open_list[idx][0]): # Updating the cost and parent node for the child generated
+                               open_list[idx][0] = Total_cost
+                               open_list[idx][1] = new_c2c
+                               open_list[idx][2] = node[3]
+                               hp.heapify(open_list)
+                               path_dict[(next_node[0],next_node[1],next_node[2])]=node_steps_list
+                    temp_list.clear()
+                    break
+            
+                   
+        
+        back_track_flag=True
+        apprx_goal=[200,30,30]
+        break
+        hp.heapify(open_list)     
+
+    if(back_track_flag):
+        #Call the backtrack function
+        backTrack(start_state,apprx_goal,closed_list,canvas,path_dict)
+    
+    else:
+        print("Solution Cannot Be Found")
+
+
+def backTrack(start_state,apprx_goal,closed_list,canvas,path_dict):
+    
+    # video_writer = cv2.VideoWriter_fourcc(*'XVID')
+    # out = cv2.VideoWriter('Planning_exploration.avi',video_writer,100,(1920,1080))
+    
+    # plotting explored vectors
+    for key in path_dict.keys():
+        
+        sub_list=copy.deepcopy(path_dict[key])
+        
+        for i in range(len(sub_list)-1):
+            
+            list1=sub_list[i]
+            list2=sub_list[i+1]
+            
+            X=int(list1[0])
+            Y=int(list1[1])
+            
+            
+            U=int(list2[0])
+            V=int(list2[1])
+            
+            cv2.arrowedLine(canvas,(U,V), (X,Y), (255,0,0),tipLength=5)
+            cv2.imshow('exploring', canvas)
+            cv2.waitKey(1000)
+        
+        
+        
+# =============================================================================
+#         X=int(key[0])
+#         Y=int(key[1])
+#         val=closed_list[key]
+#         U=int(val[0]) 
+#         V=int(val[1])
+#         
+#         cv2.arrowedLine(canvas,(U,V), (X,Y), (255,0,0),tipLength=2)
+#         cv2.imshow('exploring', canvas)
+#         # cv2.resize(canvas, (1920,1080))
+#         out.write(canvas)
+# =============================================================================
+        cv2.waitKey(0)
+    
+    
+# =============================================================================
+#     # plotting optimal path
+#     optimal_path=[]
+#     optimal_path.append(apprx_goal)
+#     
+#     parent=closed_list[tuple(apprx_goal)]
+#     optimal_path.append(parent)
+#     
+#     while(parent!=start_state):
+#         
+#         parent= closed_list[tuple(parent)]
+#         optimal_path.append(parent)
+#     
+#     optimal_path.append(start_state)
+#     print('Optimal Path generated is: \n ',optimal_path)
+#     
+#     for state in optimal_path:
+#         
+#         x=int(state[0])
+#         y=int(state[1])
+#         
+#         cv2.circle(canvas,(x,y),2,(0,0,255),-1)
+#     
+#         cv2.imshow('exploring', canvas)
+#         out.write(canvas)
+#         cv2.waitKey(100)
+#     
+#     out.release()
+#     # cv2.waitKey(0)
+# =============================================================================
+    cv2.destroyAllWindows()
+
 if __name__=='__main__':
     
     canvas=np.ones((250,400,3),dtype='uint8')
@@ -141,9 +420,23 @@ if __name__=='__main__':
     
     start_state,goal_state,rpm_list=getInputs()
     
+    # changing world co-ordinates to map-coordinates
+    start_state[1]=a_height-start_state[1]
+    goal_state[1]=a_height-goal_state[1]
+    
     # print(start_state,"goal",goal_state,'rpm',rpm_list)
-    RPM1=rpm_list[0]
-    RPM2=rpm_list[1]
+    
+    UL=rpm_list[0]
+    UR=rpm_list[1]
+    
+    # creating matrix V
+    
+    V=np.zeros((500,800,12),dtype='uint8')
+    
+    
+    AStar(start_state,goal_state,canvas,UL,UR)
+        
+  
     
 
-    actions=[[0, RPM1],[RPM1, 0],[RPM1, RPM1],[0, RPM2],[RPM2, 0],[RPM2, RPM2],[RPM1, RPM2],[RPM2, RPM1]]
+   
