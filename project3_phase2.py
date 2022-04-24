@@ -149,29 +149,28 @@ def generateNode(node,UL,UR,canvas):
     
     next_node=copy.deepcopy(node)
     
-    r = 0.200
-    L = 0.354
+# =============================================================================
+#     r = 0.066
+#     L = 0.5
+# =============================================================================
+    
+    r=0.09
+    L=0.7
+    
     dt = 0.1
     D=0
     X_i=next_node[0]
     Y_i=next_node[1]
     Thetai=next_node[2]
     
-# =============================================================================
-#     # if angle is negative, change angle to (counter clock wise angle)
-#     if (Thetai<0):
-#         Thetai=360+Thetai
-#     else:
-#         Thetai=Thetai
-# =============================================================================
-    
+
     Thetan =(3.14 * Thetai) / 180
     
     node_steps_list=[]
     
     node_steps_list.append([X_i,Y_i,Thetai])
     
-    for i in range(0,5,1):
+    for i in range(0,8,1):
         
         Delta_Xn = 0.5*r * (UL + UR) * math.cos(Thetan) * dt
         Delta_Yn = 0.5*r * (UL + UR) * math.sin(Thetan) * dt
@@ -182,6 +181,8 @@ def generateNode(node,UL,UR,canvas):
         Yd=Y_i+Delta_Yn
         Thetad=Thetai+(180*(Thetan))/3.14
         
+        Thetan=(3.14 * Thetad) / 180
+       
         # if angle is negative, change angle to (counter clock wise angle)
         if (Thetad<0):
             Thetad=360+Thetai
@@ -194,20 +195,30 @@ def generateNode(node,UL,UR,canvas):
         X_i=Xd
         Y_i=Yd
         Thetai=Thetad
-        Thetan=(3.14 * Thetad) / 180
         
-        if canvas[int(a_height-Yd)][int(Xd)][1]==255:
+        
+        if ((Xd<=0 or Xd>=a_width) or (Yd<=0 or Yd>=a_height)):
             node_steps_list.clear()
             return False,next_node,node_steps_list,D
-            break
         else:
-            # Thetan = (180 * Thetan) / 3.14
-            node_steps_list.append([Xd,Yd,Thetad])
+            if canvas[int(Yd)][int(Xd)][1]==255 :
+                node_steps_list.clear()
+                return False,next_node,node_steps_list,D
+            else:
+                # Thetan = (180 * Thetan) / 3.14
+                node_steps_list.append([Xd,Yd,Thetad])
     
-    print(node_steps_list)
-    print('/n************************************')
+# =============================================================================
+#     print(node_steps_list)
+#     print('/n************************************')
+# =============================================================================
         
-    if (not isItDuplicatenode(Xd,Yd,Thetad,V)):
+    x_f,y_f,theta_f=node_steps_list[-1]
+    
+    if ((x_f>=0 and x_f<=a_width) and 
+        (y_f>=0 and y_f<=a_height) and 
+        (canvas[int(y_f)][int(x_f)][1] != 255) and 
+        (not isItDuplicatenode(x_f,y_f,theta_f,V))):
 
         next_node[0],next_node[1],next_node[2]=node_steps_list[-1]   
         
@@ -245,23 +256,22 @@ def AStar(start_state,goal_state,canvas,UL,UR):
         # adding popped node to closed-list
         closed_list[(node[3][0],node[3][1],node[3][2])]=node[2]
        
-# =============================================================================
-#         # check if popped node is goal node
-#         # if it is goal start back tracking
-#         p1=np.array(goal_state[0:2])
-#         p2=np.array(node[3][0:2])
-#         distance=np.linalg.norm(p1-p2)
-#         l=5*0.105
-#         
-#         if (distance**2)<=(l**2):
-#             back_track_flag=True
-#             apprx_goal=node[3]
-#             print('************Started BackTracking**************\n')
-#             break
-#         
-#         del p1
-#         del p2
-# =============================================================================
+        # check if popped node is goal node
+        # if it is goal start back tracking
+        p1=np.array(goal_state[0:2])
+        p2=np.array(node[3][0:2])
+        distance=np.linalg.norm(p1-p2)
+        l=5*12
+        
+        if (distance**2)<=(l**2):
+            back_track_flag=True
+            apprx_goal=node[3]
+            print(apprx_goal)
+            print('************Started BackTracking**************\n')
+            break
+        
+        del p1
+        del p2
         
         
         
@@ -311,13 +321,9 @@ def AStar(start_state,goal_state,canvas,UL,UR):
                                hp.heapify(open_list)
                                path_dict[(next_node[0],next_node[1],next_node[2])]=node_steps_list
                     temp_list.clear()
-                    break
             
-                   
-        
-        back_track_flag=True
-        apprx_goal=[200,30,30]
-        break
+                
+
         hp.heapify(open_list)     
 
     if(back_track_flag):
@@ -330,77 +336,94 @@ def AStar(start_state,goal_state,canvas,UL,UR):
 
 def backTrack(start_state,apprx_goal,closed_list,canvas,path_dict):
     
-    # video_writer = cv2.VideoWriter_fourcc(*'XVID')
-    # out = cv2.VideoWriter('Planning_exploration.avi',video_writer,100,(1920,1080))
+    video_writer = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('Planning_exploration.avi',video_writer,100,(1920,1080))
     
     # plotting explored vectors
     for key in path_dict.keys():
         
         sub_list=copy.deepcopy(path_dict[key])
         
+       
+        
         for i in range(len(sub_list)-1):
             
             list1=sub_list[i]
             list2=sub_list[i+1]
             
-            X=int(list1[0])
-            Y=int(list1[1])
+            X=list1[0]
+            Y=list1[1]
+            
+            X=int(round(X))
+            Y=int(round(Y))
+            
+
+            
+            U=list2[0]
+            V=list2[1]
+            
+            U=int(round(U))
+            V=int(round(V))
             
             
-            U=int(list2[0])
-            V=int(list2[1])
-            
-            cv2.arrowedLine(canvas,(U,V), (X,Y), (255,0,0),tipLength=5)
+            cv2.line(canvas,(X,Y),(U,V),(255,0,0),1)
             cv2.imshow('exploring', canvas)
-            cv2.waitKey(1000)
-        
-        
-        
-# =============================================================================
-#         X=int(key[0])
-#         Y=int(key[1])
-#         val=closed_list[key]
-#         U=int(val[0]) 
-#         V=int(val[1])
-#         
-#         cv2.arrowedLine(canvas,(U,V), (X,Y), (255,0,0),tipLength=2)
-#         cv2.imshow('exploring', canvas)
-#         # cv2.resize(canvas, (1920,1080))
-#         out.write(canvas)
-# =============================================================================
-        cv2.waitKey(0)
+            cv2.waitKey(1)
     
     
-# =============================================================================
-#     # plotting optimal path
-#     optimal_path=[]
-#     optimal_path.append(apprx_goal)
-#     
-#     parent=closed_list[tuple(apprx_goal)]
-#     optimal_path.append(parent)
-#     
-#     while(parent!=start_state):
-#         
-#         parent= closed_list[tuple(parent)]
-#         optimal_path.append(parent)
-#     
-#     optimal_path.append(start_state)
-#     print('Optimal Path generated is: \n ',optimal_path)
-#     
-#     for state in optimal_path:
-#         
-#         x=int(state[0])
-#         y=int(state[1])
-#         
-#         cv2.circle(canvas,(x,y),2,(0,0,255),-1)
-#     
-#         cv2.imshow('exploring', canvas)
-#         out.write(canvas)
-#         cv2.waitKey(100)
-#     
-#     out.release()
-#     # cv2.waitKey(0)
-# =============================================================================
+    # plotting optimal path
+    optimal_path=[]
+    
+    f_list=path_dict[tuple(apprx_goal)]
+    f_list.reverse()
+    
+    for i in range(len(f_list)):
+        optimal_path.append(f_list[i])
+        
+   
+    
+    parent=f_list[-1]
+    
+    
+    n_list=[]
+    
+    while(parent!=start_state): 
+        n_list=path_dict[tuple(parent)]
+        n_list.reverse()
+        for i in range(len(n_list)):
+            optimal_path.append(n_list[i])
+        parent=n_list[-1]
+    
+    optimal_path.append(start_state)
+    print('Optimal Path generated is: \n ',optimal_path)
+    
+    
+    for i in range(len(optimal_path)-1):
+        
+        list1=optimal_path[i]
+        list2=optimal_path[i+1]
+        
+    
+        X=list1[0]
+        Y=list1[1]
+        
+        X=int(round(X))
+        Y=int(round(Y))
+        
+        U=list2[0]
+        V=list2[1]
+        
+        U=int(round(U))
+        V=int(round(V))
+        
+        
+        cv2.line(canvas,(X,Y),(U,V),(0,0,255),2)
+        cv2.imshow('exploring', canvas)
+        cv2.waitKey(1)
+    
+    
+    print('reached goal')
+    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 if __name__=='__main__':
