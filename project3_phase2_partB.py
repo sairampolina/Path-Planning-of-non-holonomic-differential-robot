@@ -3,7 +3,11 @@
 """
 Created on Sun Apr 24 11:45:37 2022
 
-@author: sairam
+ENPM661- Project3_PartB 
+
+Teammates: sairamp(118436579), dineshn()
+
+email:
 """
 
 import cv2
@@ -11,7 +15,26 @@ import numpy as np
 import copy
 import heapq as hp
 import math
+# import rospy
+# from geometry_msgs.msg import Twist
 
+# =============================================================================
+# def PublishVel(publisher_list):
+#     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+#     rospy.init_node('pub-Astar', anonymous=True)
+#     rate = rospy.Rate(1/2) # 10hz
+#     while not rospy.is_shutdown():
+#         
+#         twist = Twist()
+#         
+#         for i in range(len(publisher_list)):
+#             
+#             twist.linear.x = publisher_list[i][0]; twist.linear.y = 0.0; twist.linear.z = 0.0
+#             twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = publisher_list[i][1]
+#             pub.publish(twist)
+#         rate.sleep()
+#         
+# =============================================================================
 def createObstacles(canvas):
     
      
@@ -217,8 +240,8 @@ def generateNode(node,UL,UR,canvas):
                 # Thetan = (180 * Thetan) / 3.14
                 node_steps_list.append([Xd,Yd,Thetad])
     
-    print(node_steps_list)
-    print('/n************************************')
+    # print(node_steps_list)
+    # print('/n************************************')
         
     x_f,y_f,theta_f=node_steps_list[-1]
     
@@ -335,11 +358,11 @@ def AStar(start_state,goal_state,canvas,UL,UR):
 
     if(back_track_flag):
         #Call the backtrack function
-        backTrack(start_state,apprx_goal,closed_list,canvas,path_dict)
-    
+        optimal_path=backTrack(start_state,apprx_goal,closed_list,canvas,path_dict)
+        return optimal_path
     else:
         print("Solution Cannot Be Found")
-
+    
 
 def backTrack(start_state,apprx_goal,closed_list,canvas,path_dict):
     
@@ -403,7 +426,7 @@ def backTrack(start_state,apprx_goal,closed_list,canvas,path_dict):
         parent=n_list[-1]
     
     optimal_path.append(start_state)
-    print('Optimal Path generated is: \n ',optimal_path)
+    # print('Optimal Path generated is: \n ',optimal_path)
     
     
     for i in range(len(optimal_path)-1):
@@ -434,14 +457,16 @@ def backTrack(start_state,apprx_goal,closed_list,canvas,path_dict):
     print('reached goal')
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    
+    return optimal_path
 
 if __name__=='__main__':
     
     canvas=np.ones((1000,1000,3),dtype='uint8')
     canvas=createObstacles(canvas)
-    cv2.imshow('canvas', canvas)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow('canvas', canvas)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     
     height,width,_=canvas.shape
     a_height=height-1
@@ -465,7 +490,25 @@ if __name__=='__main__':
     
     # generateNode(start_state,UL,UR,canvas)
     
-    AStar(start_state,goal_state,canvas,UL,UR)
+    optimal_path=AStar(start_state,goal_state,canvas,UL,UR)
+    
+    # publisher_list=[]
+    # for element in optimal_path:
+    #     x=np.sqrt(element[0]**2+element[1]**2)
+    #     x=x/100
+    #     theta=element[2]
+    #     theta=(3.14 * theta) / 180
+    #     x_dot=x/2
+    #     theta=theta/2
+    #     publisher_list.append([x_dot,theta])
+    
+    # # print('/n')
+    # print('publisher list is:')
+    # print(publisher_list)
+    
+    # PublishVel(publisher_list)
+        
+        
         
     
     
